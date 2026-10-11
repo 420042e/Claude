@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+
+# Credenciales locales (no versionar)
+appsettings.Development.json
