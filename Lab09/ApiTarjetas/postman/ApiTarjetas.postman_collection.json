@@ -1,0 +1,166 @@
+{
+  "info": {
+    "name": "ApiTarjetas",
+    "description": "API de Tarjetas (ASP.NET Core 8 + SQL Server) — Clase 02, Lab 02.\n\nLectura vía EF Core; escritura vía Stored Procedures TARJETA_Add / _Update / _Delete.\n\nEjecuta las peticiones en orden: el POST guarda el id creado en la variable `tarjetaId`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "tarjetaId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "1. Registrar tarjeta",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const id = pm.response.json().id;",
+              "pm.test('Devuelve id', () => pm.expect(id).to.be.a('number'));",
+              "pm.collectionVariables.set('tarjetaId', id);"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Genera un número de 16 dígitos distinto en cada ejecución (NUMERO_TARJETA_VC es UNIQUE)",
+              "const sufijo = String(Date.now()).slice(-12);",
+              "pm.variables.set('numeroTarjeta', '4111' + sufijo);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/tarjetas", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroTarjeta\": \"{{numeroTarjeta}}\",\n  \"nombreTitular\": \"JUAN PEREZ\",\n  \"tipoTarjeta\": \"CREDITO\",\n  \"limiteCredito\": 5000,\n  \"fechaVencimiento\": \"2029-12-31\",\n  \"usuarioCreacion\": \"lab\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Alta de tarjeta. Ejecuta `api.TARJETA_Add`.\n\nValidaciones:\n- `numeroTarjeta`: exactamente 16 dígitos.\n- `limiteCredito`: no negativo.\n\nRespuesta: `201 Created` con `{ \"id\": n }` y cabecera `Location`."
+      }
+    },
+    {
+      "name": "2. Obtener tarjeta por id",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Id coincide', () => pm.expect(pm.response.json().tarjetaId).to.eql(Number(pm.collectionVariables.get('tarjetaId'))));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/tarjetas/{{tarjetaId}}", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas", "{{tarjetaId}}"] },
+        "description": "Consulta una tarjeta por id (EF Core, sin tracking). `404` si no existe."
+      }
+    },
+    {
+      "name": "3. Listar tarjetas activas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Es un arreglo', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/tarjetas", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas"] },
+        "description": "Lista las tarjetas con `ESTADO_BT = 1`."
+      }
+    },
+    {
+      "name": "4. Actualizar tarjeta",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/tarjetas/{{tarjetaId}}", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas", "{{tarjetaId}}"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreTitular\": \"JUAN PEREZ LOPEZ\",\n  \"limiteCredito\": 7500\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Modifica titular y límite. Ejecuta `api.TARJETA_Update`. Solo se usan `nombreTitular` y `limiteCredito`; el id va en la URL."
+      }
+    },
+    {
+      "name": "5. Eliminar tarjeta (baja lógica)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/api/tarjetas/{{tarjetaId}}", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas", "{{tarjetaId}}"] },
+        "description": "Baja lógica: `ESTADO_BT = 0`. Ejecuta `api.TARJETA_Delete`. La tarjeta deja de aparecer en el listado pero sigue siendo consultable por id."
+      }
+    },
+    {
+      "name": "Errores",
+      "item": [
+        {
+          "name": "Registrar con número inválido",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/tarjetas", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroTarjeta\": \"123\",\n  \"nombreTitular\": \"JUAN PEREZ\",\n  \"tipoTarjeta\": \"CREDITO\",\n  \"limiteCredito\": 5000,\n  \"fechaVencimiento\": \"2029-12-31\",\n  \"usuarioCreacion\": \"lab\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "El servicio lanza `ArgumentException`. Hoy la API no la traduce a 400, así que responde **500**."
+          }
+        },
+        {
+          "name": "Obtener tarjeta inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tarjetas/999999", "host": ["{{baseUrl}}"], "path": ["api", "tarjetas", "999999"] }
+          }
+        }
+      ]
+    }
+  ]
+}

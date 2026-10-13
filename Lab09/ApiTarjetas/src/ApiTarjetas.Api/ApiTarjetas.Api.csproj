@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApiTarjetas.Dominio\ApiTarjetas.Dominio.csproj" />
+    <ProjectReference Include="..\ApiTarjetas.Datos\ApiTarjetas.Datos.csproj" />
+  </ItemGroup>
+
+</Project>
